@@ -1,0 +1,221 @@
+import 'dart:async';
+import 'dart:convert'; // convert json to list
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;  // http: ^0.12.0+2
+import 'package:flutter_search_bar/flutter_search_bar.dart'; // flutter_search_bar: ^2.0.7
+void main()=>runApp(new MaterialApp(
+  debugShowCheckedModeBanner: false,
+  home: new HomePage(),
+  theme: ThemeData(appBarTheme: AppBarTheme(color: Colors.blue)),
+));
+
+class HomePage extends StatefulWidget {
+  @override
+  _HomePageState createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  List data;
+  Future<String> getData() async{
+    var response = await http.get(Uri.encodeFull("https://jsonplaceholder.typicode.com/posts"),
+        headers: {
+          "Accept": "application/json"
+        }
+    );
+//    print(response.body);
+
+    data = jsonDecode(response.body);
+    print(data[1]['title']);
+    return "Success!";
+  }
+  @override
+  void initState() {
+    this.getData();
+  }
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Sample of Json Data'),
+        actions: <Widget>[
+          IconButton(icon: Icon(Icons.search),
+            onPressed: (){showSearch(context: context, delegate: DataSearch());},
+          )
+        ],
+      ),
+
+      body: ListView.builder(
+          itemCount: data == null ? 0 : data.length,
+          itemBuilder: (BuildContext context, int index) {
+            return Card(color: Colors.white70,
+              child: Container(
+                padding: EdgeInsets.all(15.0),
+                child: Row(
+
+                  children: <Widget>[
+                    Expanded(
+                        flex: 3,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Padding(padding: EdgeInsets.only(bottom: 0.0),
+                              child: Text('$index hour ago',
+                                style: TextStyle(
+                                  fontSize: 15.0,
+                                  color: Colors.black38,
+                                ),
+                              ),
+                            ),
+                            Padding(padding: EdgeInsets.only(top:15.0),
+                              child: Text(data[index]['title'],
+                                style: TextStyle(
+                                  fontSize: 18.0,
+                                  color: Colors.black87,
+                                  wordSpacing: 2.0,
+
+                                ),
+                              ),
+                            ),
+                            Padding(padding: EdgeInsets.only(top: 10.0, bottom: 15.0),
+                              child: Text(data[index]['body'],
+                                style: TextStyle(
+                                  fontSize: 16.0,
+                                  color: Colors.black54,
+                                ),
+                              ),
+
+                            ),
+                          ],
+                        )
+                    ),
+                    Expanded(
+                      flex: 1,
+                      child: Column(
+                        children: <Widget>[
+                          Padding(padding: EdgeInsets.only(left: 15.0,bottom: 15.0),
+                            child: Container(
+
+                              height: 100.0,
+                              decoration: BoxDecoration(
+                                  gradient: LinearGradient(colors:
+                                  [const Color(0xff66aaff),const Color(0xd9333333)],
+                                      stops: [0.0,0.9],
+                                      begin: FractionalOffset(0.5, 0.0),
+                                      end: FractionalOffset(0.0, 1.0)
+                                  )
+                              ),
+                            ),
+                          ),
+                          Padding(padding: EdgeInsets.only(left:20.0,top: 0.0, right:5.0),
+                              child: Row (
+                                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                children: <Widget>[
+                                  InkWell(
+                                      child: Icon(Icons.share,size: 22,color: Colors.blue)
+                                  ),
+                                  InkWell(
+                                    child: Icon(Icons.turned_in,size: 22, color: Colors.blue,),
+                                  ),
+
+
+                                ],
+                              )
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            );
+          }
+
+      ),
+
+      floatingActionButton: FloatingActionButton(onPressed: getData,child: Icon(Icons.mic), ),
+      drawer: Drawer(),
+    );
+  }
+}
+
+class DataSearch extends SearchDelegate<String> {
+
+  final cities = [
+    "adfaf",
+    "rewdsfds",
+    "sdfsaaasd",
+    "ererg",
+    "wef",
+    "efew",
+    "ewr",
+    "wv",
+    "rtjtr",
+    "yyuiyu",
+    "abdbadfs",
+    "trjhge",
+  ];
+  final recentCities = [
+    "bkt",
+    "ktm",
+    "htm",
+    "lit"
+  ];
+  @override
+  List<Widget> buildActions(BuildContext context) {
+    // actions for app bar
+    return [IconButton(icon: Icon(Icons.clear), onPressed: (){
+      query = "";
+    }) ];
+  }
+  @override
+  Widget buildLeading(BuildContext context) {
+  // leading icon on the left of the app bar
+    return IconButton(
+      icon: AnimatedIcon(
+        icon:AnimatedIcons.menu_arrow,
+        progress: transitionAnimation,
+      ),
+      onPressed: (){
+        close(context, null);
+      },
+    );
+  }
+  @override
+  Widget buildResults(BuildContext context) {
+  // show more result based on the selection
+    return Center(
+      child: Container(
+
+        child: Text(query,style: TextStyle(fontSize: 24.0),),
+
+
+      ),
+    );
+  }
+  @override
+  Widget buildSuggestions(BuildContext context) {
+  // show when someone searches for something
+    final suggestionList = query.isEmpty?recentCities
+        :cities.where((p) => p.startsWith(query)).toList(); // search filter by character
+
+    return ListView.builder(
+        itemBuilder: (context, index) => ListTile(
+          onTap: (){
+            showResults(context);
+          },
+          leading: Icon(Icons.search),
+          title: RichText(text: TextSpan(
+            text: suggestionList[index].substring(0,query.length),
+            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+            children: [
+              TextSpan(
+                text: suggestionList[index].substring(query.length),
+                style: TextStyle(color: Colors.grey)
+              )
+            ]
+          )),
+        ),
+      itemCount: suggestionList.length,
+    );
+  }
+}
